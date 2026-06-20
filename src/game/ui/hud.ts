@@ -162,6 +162,7 @@ export class GameHUD {
     localStorage.setItem('bintang_journey_muted', String(this.isMuted));
     this.soundBtn.innerHTML = this.getSoundIconHTML();
     this.showToast(this.isMuted ? 'Mute' : 'Unmute');
+    window.dispatchEvent(new CustomEvent('hud-mute-changed', { detail: { muted: this.isMuted } }));
   }
 
   private getSoundIconHTML(): string {
