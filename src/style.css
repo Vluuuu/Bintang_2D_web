@@ -1,0 +1,276 @@
+/* Google Font Import */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Press+Start+2P&display=swap');
+
+/* Base Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #0c0d14; /* Harmonious dark background */
+  color: #e4e6eb;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#game-wrapper {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: min(100vw, 177.78vh); /* 16:9 fit by width or height */
+  max-width: 1280px;
+  max-height: 720px;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.85);
+  background-color: #000000;
+  overflow: hidden;
+}
+
+/* Phaser mount fills the shell exactly */
+#game-viewport {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Make canvas cover the container and apply pixelated rendering */
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  -moz-image-rendering: pixelated;
+  -webkit-image-rendering: pixelated;
+}
+
+/* --- HUD OVERLAY STYLING --- */
+#game-hud-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Let clicks pass through to game except interactive elements */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 3.5%; /* Responsive padding based on viewport size */
+  font-size: 16px;
+}
+
+/* Enable pointer events for active HUD elements */
+.hud-top, .hud-bottom-controls, .hud-interact-prompt, .hud-toast {
+  pointer-events: auto;
+}
+
+/* Top HUD Layout */
+.hud-top {
+  display: flex;
+  justify-content: flex-end; /* Top-right HUD */
+  width: 100%;
+}
+
+.hud-top-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Retro HUD Cards */
+.hud-location-card, .hud-time-card {
+  background-color: #161925;
+  border: 4px solid #23273a;
+  padding: 8px 16px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: #00ffcc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 4px 4px 0px #000;
+}
+
+.hud-location-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffff00;
+}
+
+.location-icon {
+  font-size: 14px;
+}
+
+/* Interactive Sound Toggle */
+.hud-sound-btn {
+  background-color: #161925;
+  border: 4px solid #23273a;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e4e6eb;
+  box-shadow: 4px 4px 0px #000;
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+
+.hud-sound-btn:hover {
+  background-color: #1e2233;
+  color: #00ffcc;
+}
+
+.hud-sound-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #000;
+}
+
+.svg-pixel-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Center Bottom Interaction Prompt */
+.hud-center-bottom {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 2%;
+}
+
+/* Small, unobtrusive prompt chip (no big banner) */
+.hud-interact-prompt {
+  background-color: rgba(12, 13, 20, 0.82);
+  border: 2px solid #00ffcc;
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  display: none; /* Controlled dynamically by JS, default hidden */
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-interact-prompt .prompt-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #e4e6eb;
+  letter-spacing: 0.5px;
+}
+
+.hud-interact-prompt .key-box {
+  background-color: #00ffcc;
+  color: #000;
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  font-weight: bold;
+}
+
+/* Bottom Controls */
+.hud-bottom-controls {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  align-items: flex-end;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Large Tactile Buttons */
+.control-btn {
+  background-color: #161925;
+  border: 5px solid #2d324f;
+  color: #ffffff;
+  font-size: 28px;
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 6px 6px 0px #000000;
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+
+.control-btn:hover {
+  background-color: #1c2030;
+}
+
+.control-btn:active, .control-btn.active {
+  transform: translate(4px, 4px);
+  box-shadow: 2px 2px 0px #000000;
+  background-color: #00ffcc;
+  color: #000000;
+  border-color: #00ccaa;
+}
+
+.control-hint {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #6d7593;
+}
+
+/* Toasts notifications overlay */
+.hud-toast-container {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.hud-toast {
+  background-color: #00ffcc;
+  color: #000000;
+  border: 4px solid #000000;
+  padding: 10px 20px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  font-weight: bold;
+  box-shadow: 4px 4px 0px #000000;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.hud-toast.fade-out {
+  opacity: 0;
+  transform: scale(0.9) translateY(-10px);
+}
+
+/* Responsive adjustment for Mobile screens */
+@media (max-width: 768px) {
+  .hud-location-card, .hud-time-card {
+    font-size: 9px;
+    padding: 6px 12px;
+  }
+  .control-btn {
+    width: 70px;
+    height: 70px;
+    font-size: 22px;
+    border-width: 4px;
+  }
+  .hud-interact-prompt .prompt-text {
+    font-size: 8px;
+  }
+}
