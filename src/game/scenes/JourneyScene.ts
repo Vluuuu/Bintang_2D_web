@@ -4,16 +4,15 @@ import { themeAssets } from '../config/assets';
 import { BIKE_CONFIG, BIKE_DRIVE_SEQUENCE, BIKE_IDLE_FRAME } from '../config/bike';
 import type { BikeFrame } from '../config/bike';
 import { WORLD_VISUALS, THEME_GRADE } from '../config/worldVisuals';
+import { CELESTIAL_CONFIG, CELESTIAL_ASSETS, CELESTIAL_DRIFT } from '../config/celestial';
 import { getCurrentTheme, formatLocalTime } from '../config/timeTheme';
 import type { TimeTheme } from '../config/timeTheme';
 
 const LANDMARK_PROMPT_RADIUS = 520; // world units around a landmark center
-const LM_MASK_KEY = 'lm_edge_mask';
 
 interface LandmarkView {
   id: string;
   spr: Phaser.GameObjects.Sprite;
-  mask: Phaser.GameObjects.Image; // gradient edge mask source (not on display list)
 }
 
 export class JourneyScene extends Phaser.Scene {
@@ -33,6 +32,8 @@ export class JourneyScene extends Phaser.Scene {
   private cityFitX = 1;
   private landmarks: LandmarkView[] = [];
   private gradeRect!: Phaser.GameObjects.Rectangle;
+  private celestial!: Phaser.GameObjects.Image;
+  private celestialBaseX = 0;
 
   // Bike (container stays fixed; child image offset per frame)
   private bikeContainer!: Phaser.GameObjects.Container;
@@ -53,6 +54,9 @@ export class JourneyScene extends Phaser.Scene {
   private keyEnter!: Phaser.Input.Keyboard.Key;
   private isMovingForward = false;
   private isMovingBackward = false;
+
+  // Gameplay gate: world stays frozen until the start screen dispatches game-start
+  private started = false;
 
   constructor() {
     super({ key: 'JourneyScene' });
@@ -80,6 +84,10 @@ export class JourneyScene extends Phaser.Scene {
     used.set(BIKE_IDLE_FRAME.key, BIKE_IDLE_FRAME.file);
     BIKE_DRIVE_SEQUENCE.forEach(f => used.set(f.key, f.file));
     used.forEach((file, key) => this.load.image(key, file));
+
+    // Celestial assets (sun/moon); key === path
+    this.load.image(CELESTIAL_ASSETS.sun, CELESTIAL_ASSETS.sun);
+    this.load.image(CELESTIAL_ASSETS.moon, CELESTIAL_ASSETS.moon);
   }
 
   create(): void {
@@ -93,23 +101,23 @@ export class JourneyScene extends Phaser.Scene {
     this.cityFitX = height / citySrc.height;
     this.cityBg.setTileScale(this.cityFitX, this.cityFitX);
 
-    // Build the horizontal edge-blend gradient mask texture once
-    this.buildEdgeMaskTexture(width, height);
+    // A2. Celestial layer (sun/moon): fixed to viewport, behind landmark, above city sky.
+    // Does NOT move with worldDistance. Single instance, theme-driven.
+    this.celestial = this.add.image(0, 0, CELESTIAL_ASSETS.sun)
+      .setOrigin(0.5, 0.5).setDepth(0.5).setVisible(false);
+    this.celestialBaseX = 0;
+    this.applyCelestial(this.currentTheme);
 
-    // B. Landmark segments: full-canvas sprite + gradient edge mask, positioned by world X
+    // B. Landmark segments: OPAQUE full-canvas sprites positioned by absolute world X.
+    // No mask, no alpha blend -> a landmark fully covers the city where it sits, so
+    // city skyline never ghosts through. City + landmark read as side-by-side world.
     for (const seg of route) {
       if (seg.kind !== 'landmark' || !seg.enabled || !seg.id) continue;
       const spr = this.add.sprite(width * 2, height / 2, `landmark_${seg.id}_${this.currentTheme}`);
       spr.setOrigin(0.5, 0.5).setDepth(1);
       spr.setDisplaySize(WORLD_VISUALS.landmarkDisplayWidth, WORLD_VISUALS.landmarkDisplayHeight);
       spr.setVisible(false);
-
-      // Gradient mask source: soft-fades the landmark's left/right edges into the city
-      const maskImg = this.make.image({ x: width * 2, y: height / 2, key: LM_MASK_KEY, add: false });
-      maskImg.setOrigin(0.5, 0.5);
-      spr.setMask(maskImg.createBitmapMask());
-
-      this.landmarks.push({ id: seg.id, spr, mask: maskImg });
+      this.landmarks.push({ id: seg.id, spr });
     }
 
     // C. Thin per-theme color grade overlay (above backgrounds, below bike)
@@ -142,26 +150,25 @@ export class JourneyScene extends Phaser.Scene {
     window.addEventListener('hud-move-backward-start', () => { this.isMovingBackward = true; });
     window.addEventListener('hud-move-backward-end', () => { this.isMovingBackward = false; });
     window.addEventListener('hud-trigger-interaction', () => { this.triggerInteraction(); });
+    window.addEventListener('game-start', () => { this.started = true; });
 
     this.dispatchTimeUpdate();
     this.dispatchJourneyUpdate();
   }
 
-  /** Build a 1280x720 white texture whose alpha ramps in over transitionWidth on each side. */
-  private buildEdgeMaskTexture(width: number, height: number): void {
-    if (this.textures.exists(LM_MASK_KEY)) return;
-    const canvasTex = this.textures.createCanvas(LM_MASK_KEY, width, height);
-    if (!canvasTex) return;
-    const ctx = canvasTex.getContext();
-    const ramp = Phaser.Math.Clamp(WORLD_VISUALS.transitionWidth / width, 0.05, 0.45);
-    const grad = ctx.createLinearGradient(0, 0, width, 0);
-    grad.addColorStop(0, 'rgba(255,255,255,0)');
-    grad.addColorStop(ramp, 'rgba(255,255,255,1)');
-    grad.addColorStop(1 - ramp, 'rgba(255,255,255,1)');
-    grad.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, width, height);
-    canvasTex.refresh();
+  /** Show the single sun/moon for a theme, fixed to the viewport. */
+  private applyCelestial(theme: TimeTheme): void {
+    const cfg = CELESTIAL_CONFIG[theme];
+    const width = this.scale.width;
+    const height = this.scale.height;
+    if (!cfg.enabled) {
+      this.celestial.setVisible(false); // background already has a baked-in body
+      return;
+    }
+    this.celestial.setTexture(CELESTIAL_ASSETS[cfg.assetKey]);
+    this.celestialBaseX = width * cfg.xRatio;
+    this.celestial.setPosition(this.celestialBaseX, height * cfg.yRatio);
+    this.celestial.setVisible(true);
   }
 
   private applyBikeFrame(frame: BikeFrame): void {
@@ -188,15 +195,20 @@ export class JourneyScene extends Phaser.Scene {
       }
       const grade = THEME_GRADE[activeTheme];
       this.gradeRect.setFillStyle(grade.color, grade.alpha);
+      this.applyCelestial(activeTheme); // single sun/moon swap; never two at once
       this.dispatchTimeUpdate();
     }
 
-    // 2. Input -> target speed
-    let fwd = this.isMovingForward;
-    let back = this.isMovingBackward;
-    if (this.cursors) {
-      fwd = fwd || this.cursors.right.isDown || this.keyD.isDown;
-      back = back || this.cursors.left.isDown || this.keyA.isDown;
+    // 2. Input -> target speed (ignored until the game has started)
+    let fwd = false;
+    let back = false;
+    if (this.started) {
+      fwd = this.isMovingForward;
+      back = this.isMovingBackward;
+      if (this.cursors) {
+        fwd = fwd || this.cursors.right.isDown || this.keyD.isDown;
+        back = back || this.cursors.left.isDown || this.keyA.isDown;
+      }
     }
     if (fwd && !back) this.targetSpeed = this.maxForward;
     else if (back && !fwd) this.targetSpeed = this.maxReverse;
@@ -216,16 +228,20 @@ export class JourneyScene extends Phaser.Scene {
     // 5. Scroll city loop (parallax 1, horizontal only; TileSprite wraps seamlessly)
     this.cityBg.tilePositionX = this.worldDistance / this.cityFitX;
 
-    // 6. Position landmark segments + their masks by absolute world X
+    // 6. Position landmark segments by absolute world X (opaque, no mask)
     const bikeScreenX = width * BIKE_CONFIG.screenXRatio;
     for (const lv of this.landmarks) {
       const seg = route.find(s => s.id === lv.id)!;
       const screenX = bikeScreenX + (segmentCenter(seg) - this.worldDistance);
       lv.spr.x = screenX;
-      lv.mask.x = screenX;
-      lv.mask.y = lv.spr.y;
       const onScreen = screenX > -width / 2 && screenX < width * 1.5;
       lv.spr.setVisible(onScreen);
+    }
+
+    // 6b. Celestial stays fixed to viewport; optional tiny idle drift only.
+    if (CELESTIAL_DRIFT.enabled && this.celestial.visible) {
+      const sway = Math.sin((_time / CELESTIAL_DRIFT.periodMs) * Math.PI * 2) * CELESTIAL_DRIFT.amplitudePx;
+      this.celestial.x = this.celestialBaseX + sway;
     }
 
     // 7. Animate bike (manual frame stepping; container never moves)

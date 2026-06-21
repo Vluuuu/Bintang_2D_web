@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { JourneyScene } from './game/scenes/JourneyScene';
 import { GameHUD } from './game/ui/hud';
 import { BgmManager } from './game/audio/BgmManager';
+import { StartScreen } from './game/ui/startScreen';
 
 // Phaser game configuration
 const config: Phaser.Types.Core.GameConfig = {
@@ -36,26 +37,23 @@ export const game = new Phaser.Game(config);
 // Instantiate the Interactive overlay HUD
 export const hud = new GameHUD();
 
-// Background music: no autoplay; starts on first player interaction.
+// Background music: no autoplay; starts only from the start button click.
 export const bgm = new BgmManager();
 
-const startBgmOnce = () => {
-  bgm.start();
-  window.removeEventListener('hud-move-forward-start', startBgmOnce);
-  window.removeEventListener('hud-move-backward-start', startBgmOnce);
-  window.removeEventListener('keydown', onKeyStart);
-};
-const onKeyStart = (e: KeyboardEvent) => {
-  if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(e.code)) startBgmOnce();
-};
-window.addEventListener('hud-move-forward-start', startBgmOnce);
-window.addEventListener('hud-move-backward-start', startBgmOnce);
-window.addEventListener('keydown', onKeyStart);
+// Hide gameplay HUD/controls until the journey begins.
+document.body.classList.add('pre-start');
 
-// Sound button also counts as first interaction (and toggles mute).
+// Start screen overlay (world frozen behind it; shown once per page load).
+export const startScreen = new StartScreen();
+
+window.addEventListener('game-start', () => {
+  document.body.classList.remove('pre-start');
+  bgm.start(); // begins inside the click gesture, so playback is allowed
+}, { once: true });
+
+// Mute toggle (works after start).
 window.addEventListener('hud-mute-changed', (e: Event) => {
   const muted = (e as CustomEvent).detail.muted as boolean;
-  bgm.start();
   bgm.setMuted(muted);
 });
 

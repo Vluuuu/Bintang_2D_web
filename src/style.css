@@ -74,6 +74,89 @@ canvas {
   pointer-events: auto;
 }
 
+/* --- START SCREEN OVERLAY --- */
+/* Hide gameplay HUD/controls until the journey begins */
+body.pre-start #game-hud-container {
+  display: none;
+}
+
+#start-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(8, 9, 16, 0.55);
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+
+#start-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.start-panel {
+  background-color: #161925;
+  border: 5px solid #00ffcc;
+  box-shadow: 8px 8px 0 #000;
+  padding: 7% 6%;
+  max-width: 80%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  image-rendering: pixelated;
+}
+
+.start-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 22px;
+  color: #ffff00;
+  letter-spacing: 1px;
+  text-shadow: 3px 3px 0 #000;
+  margin: 0;
+}
+
+.start-subtitle {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #e4e6eb;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.start-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 13px;
+  color: #000;
+  background-color: #00ffcc;
+  border: 4px solid #000;
+  box-shadow: 5px 5px 0 #000;
+  padding: 16px 22px;
+  margin-top: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+
+.start-btn:hover {
+  background-color: #4dffdb;
+}
+
+.start-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0 #000;
+}
+
+@media (max-width: 768px) {
+  .start-title { font-size: 15px; }
+  .start-subtitle { font-size: 8px; }
+  .start-btn { font-size: 11px; padding: 14px 18px; }
+}
+
 /* Top HUD Layout */
 .hud-top {
   display: flex;
