@@ -13,6 +13,7 @@ export const themeAssets: Record<TimeTheme, ThemeAssetMap> = {
       'lenteng': 'assets/backgrounds/day/lenteng_day.png',
       'ps-gacor': 'assets/backgrounds/day/ps_gacor_day.png',
       'blok-m': 'assets/backgrounds/day/blok_m_landmark.png', // Audited filename
+      'goa': '/assets/backgrounds/day/goa_day.png',
     }
   },
   sunset: {
@@ -22,6 +23,7 @@ export const themeAssets: Record<TimeTheme, ThemeAssetMap> = {
       'lenteng': 'assets/backgrounds/sunset/lenteng_sunset.png',
       'ps-gacor': 'assets/backgrounds/sunset/ps_gacor_sunset.png',
       'blok-m': 'assets/backgrounds/sunset/blok_m_sunset_landmark.png', // Audited filename
+      'goa': '/assets/backgrounds/sunset/goa_sunset.png',
     }
   },
   night: {
@@ -31,6 +33,7 @@ export const themeAssets: Record<TimeTheme, ThemeAssetMap> = {
       'lenteng': 'assets/backgrounds/night/lenteng_night.png',
       'ps-gacor': 'assets/backgrounds/night/ps_gacor_night.png',
       'blok-m': 'assets/backgrounds/night/blok_m_night_landmark.png', // Audited filename
+      'goa': '/assets/backgrounds/night/goa_night.png',
     }
   }
 };

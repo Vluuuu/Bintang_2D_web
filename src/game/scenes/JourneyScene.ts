@@ -130,10 +130,6 @@ export class JourneyScene extends Phaser.Scene {
     // Celestial assets (sun/moon); key === path
     this.load.image(CELESTIAL_ASSETS.sun, CELESTIAL_ASSETS.sun);
     this.load.image(CELESTIAL_ASSETS.moon, CELESTIAL_ASSETS.moon);
-
-    // Goa ending segment. Audited: only ONE goa asset exists (night theme).
-    // Filename has a capital G. Reused across all themes since no day/sunset variant.
-    this.load.image('goa', 'assets/backgrounds/night/Goa_night.png');
   }
 
   create(): void {
@@ -246,8 +242,7 @@ export class JourneyScene extends Phaser.Scene {
     }
 
     // Goa ending segment: the final full image at the very end of the track.
-    // Single asset reused for every theme (only Goa_night.png exists).
-    const goaSpr = this.add.sprite(0, 0, 'goa')
+    const goaSpr = this.add.sprite(0, 0, `landmark_goa_${theme}`)
       .setOrigin(0, 0).setDepth(0).setScrollFactor(0).setVisible(false);
     goaSpr.setDisplaySize(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
     goaSpr.y = 0;
