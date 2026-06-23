@@ -84,6 +84,12 @@ export class BgmManager {
     this.fadeTo(el, muted ? 0 : BGM_CONFIG.volume);
   }
 
+  /** Ending fade-out: gently ramp the current track to silence. */
+  fadeOut(): void {
+    if (!this.started || !this.current) return;
+    this.fadeTo(this.elements[this.current], 0);
+  }
+
   isMuted(): boolean {
     return this.muted;
   }

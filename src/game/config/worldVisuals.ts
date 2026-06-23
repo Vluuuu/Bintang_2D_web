@@ -16,6 +16,10 @@ export const WORLD_VISUALS = {
   cityDisplayHeight: 720,
   landmarkDisplayWidth: 1280,
   landmarkDisplayHeight: 720,
+  // Visual segment width used ONLY for landmark render/visibility range.
+  // Separate from route width (route width = gameplay/interaction distance).
+  landmarkVisualWidth: 1280,
+  debugLandmarkBounds: false,  // true = draw left/right edge guides + bounds labels
 };
 
 /** Very thin full-screen color grade per theme to unify city + landmark. */

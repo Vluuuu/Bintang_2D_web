@@ -47,6 +47,7 @@ document.body.classList.add('pre-start');
 export const startScreen = new StartScreen();
 
 window.addEventListener('game-start', () => {
+  (window as any).__journeyStarted = true; // persistent flag: scene may attach its listener later
   document.body.classList.remove('pre-start');
   bgm.start(); // begins inside the click gesture, so playback is allowed
 }, { once: true });
@@ -57,11 +58,15 @@ window.addEventListener('hud-mute-changed', (e: Event) => {
   bgm.setMuted(muted);
 });
 
+// Ending (goa): fade the music out gently as the screen fades to black.
+window.addEventListener('journey-ending', () => bgm.fadeOut(), { once: true });
+
 // Follow device-time theme changes (reuses timeTheme rules; crossfades on change).
 window.setInterval(() => bgm.syncTheme(), 5000);
 
 // Dev check: ensure exactly one active Phaser canvas exists (guards against double-scene regressions)
 if (import.meta.env.DEV) {
+  (window as any).game = game; // dev-only handle for debugging/inspection
   window.setTimeout(() => {
     const canvasCount = document.querySelectorAll('canvas').length;
     if (canvasCount !== 1) {

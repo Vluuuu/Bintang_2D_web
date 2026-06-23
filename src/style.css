@@ -357,3 +357,155 @@ body.pre-start #game-hud-container {
     font-size: 8px;
   }
 }
+
+/* ===== DIALOGUE BUBBLE (pixel-art chat bubble above motor) ===== */
+
+#dialogue-bubble-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 150;
+  display: none;
+  /* Controlled by JS */
+  flex-direction: column;
+  align-items: center;
+  /* Position bubble above the motor/couple (center of screen, upper area) */
+  justify-content: flex-start;
+  padding-top: 8%;
+}
+
+.dialogue-bubble {
+  position: relative;
+  background-color: #fff8e7;
+  /* Cream / light */
+  border: 4px solid #1a1a2e;
+  /* Dark pixel border */
+  box-shadow: 6px 6px 0 #000;
+  padding: 14px 18px 10px;
+  max-width: 70%;
+  min-width: 200px;
+  cursor: pointer;
+  pointer-events: auto;
+  image-rendering: pixelated;
+  /* No border-radius — pixel-art square corners */
+}
+
+/* Bubble entrance animation */
+.dialogue-bubble-enter {
+  animation: bubble-pop 0.2s ease-out;
+}
+
+@keyframes bubble-pop {
+  0% {
+    transform: scale(0.7) translateY(10px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Tail pointing down toward the motor */
+.dialogue-bubble-tail {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 12px solid #1a1a2e;
+}
+
+.dialogue-bubble-tail::after {
+  content: '';
+  position: absolute;
+  top: -14px;
+  left: -6px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid #fff8e7;
+}
+
+/* Location label at top of bubble */
+.dialogue-bubble-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #e94560;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* Dialogue text body */
+.dialogue-bubble-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1a1a2e;
+  text-align: center;
+  word-wrap: break-word;
+}
+
+/* Continue hint at bottom of bubble */
+.dialogue-bubble-hint {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #6b7280;
+  text-align: right;
+  margin-top: 10px;
+  letter-spacing: 0.5px;
+  animation: hint-blink 1.5s ease-in-out infinite;
+}
+
+@keyframes hint-blink {
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Mobile responsive for dialogue bubble */
+@media (max-width: 768px) {
+  #dialogue-bubble-container {
+    padding-top: 12%;
+  }
+
+  .dialogue-bubble {
+    max-width: 85%;
+    min-width: 160px;
+    padding: 10px 14px 8px;
+    border-width: 3px;
+    box-shadow: 4px 4px 0 #000;
+  }
+
+  .dialogue-bubble-label {
+    font-size: 8px;
+    margin-bottom: 6px;
+  }
+
+  .dialogue-bubble-text {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .dialogue-bubble-hint {
+    font-size: 7px;
+    margin-top: 8px;
+  }
+}
+
