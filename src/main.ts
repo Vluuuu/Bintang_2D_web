@@ -4,6 +4,7 @@ import { JourneyScene } from './game/scenes/JourneyScene';
 import { GameHUD } from './game/ui/hud';
 import { BgmManager } from './game/audio/BgmManager';
 import { StartScreen } from './game/ui/startScreen';
+import { OrientationGate } from './game/ui/orientationGate';
 
 // Phaser game configuration
 const config: Phaser.Types.Core.GameConfig = {
@@ -45,6 +46,9 @@ document.body.classList.add('pre-start');
 
 // Start screen overlay (world frozen behind it; shown once per page load).
 export const startScreen = new StartScreen();
+
+// Orientation gate overlay for mobile portrait devices
+export const orientationGate = new OrientationGate();
 
 window.addEventListener('game-start', () => {
   (window as any).__journeyStarted = true; // persistent flag: scene may attach its listener later

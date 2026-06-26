@@ -20,13 +20,14 @@ import type { TimeTheme } from './timeTheme';
  */
 export interface CelestialThemeConfig {
   enabled: boolean;   // false = background already contains the celestial body
-  assetKey: 'sun' | 'moon';
+  assetKey: 'sun' | 'sunset_sun' | 'moon';
   xRatio: number;     // 0..1 of canvas width
   yRatio: number;     // 0..1 of canvas height
 }
 
 export const CELESTIAL_ASSETS = {
   sun: 'assets/backgrounds/day/sun.png',
+  sunset_sun: 'assets/backgrounds/sunset/sunset_sun.png',
   moon: 'assets/backgrounds/night/moon.png',
 };
 
@@ -39,6 +40,6 @@ export const CELESTIAL_DRIFT = {
 
 export const CELESTIAL_CONFIG: Record<TimeTheme, CelestialThemeConfig> = {
   day:    { enabled: true,  assetKey: 'sun',  xRatio: 0.16, yRatio: 0.16 },
-  sunset: { enabled: false, assetKey: 'sun',  xRatio: 0.18, yRatio: 0.28 }, // baked into bg
+  sunset: { enabled: true,  assetKey: 'sunset_sun',  xRatio: 0.11, yRatio: 0.15 },
   night:  { enabled: true,  assetKey: 'moon', xRatio: 0.16, yRatio: 0.17 },
 };

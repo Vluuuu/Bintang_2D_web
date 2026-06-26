@@ -32,6 +32,17 @@ interface VisualSeg {
   label: string;
 }
 
+interface HeartState {
+  x: number;
+  y: number;
+  vy: number;
+  color: number;
+  scale: number;
+  alpha: number;
+  phase: number;
+  phaseSpeed: number;
+}
+
 export class JourneyScene extends Phaser.Scene {
   // Continuous world state (units = world px at base 1280 canvas)
   private worldDistance = 0;
@@ -98,7 +109,12 @@ export class JourneyScene extends Phaser.Scene {
   // Dialogue bubble properties
   private dialogueBubble!: DialogueBubble;
   private isDialogueActive = false;
+  private isOrientationLocked = false;
   private keySpace!: Phaser.Input.Keyboard.Key;
+
+  // Hearts overlay state
+  private hearts: HeartState[] = [];
+  private heartsGraphics?: Phaser.GameObjects.Graphics;
 
   constructor() {
     super({ key: 'JourneyScene' });
@@ -129,6 +145,7 @@ export class JourneyScene extends Phaser.Scene {
 
     // Celestial assets (sun/moon); key === path
     this.load.image(CELESTIAL_ASSETS.sun, CELESTIAL_ASSETS.sun);
+    this.load.image(CELESTIAL_ASSETS.sunset_sun, CELESTIAL_ASSETS.sunset_sun);
     this.load.image(CELESTIAL_ASSETS.moon, CELESTIAL_ASSETS.moon);
   }
 
@@ -163,9 +180,15 @@ export class JourneyScene extends Phaser.Scene {
     // fillAlpha=1 so setAlpha() on the object actually drives opacity; begin at 0.
     this.fadeRect = this.add.rectangle(0, 0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 0x000000, 1)
       .setOrigin(0, 0).setDepth(100).setScrollFactor(0).setAlpha(0);
+    
+    // Graphics object for pixel-art hearts, placed between fadeRect (depth 100) and endText (depth 101)
+    this.heartsGraphics = this.add.graphics().setDepth(100.5).setScrollFactor(0);
+
     this.endText = this.add.text(VIEWPORT_WIDTH / 2, VIEWPORT_HEIGHT / 2, 'HAPPY 6TH MONTHVERSARY', {
-      fontFamily: 'monospace', fontSize: '40px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: '"Press Start 2P"', fontSize: '28px', color: '#ffffff', align: 'center',
     }).setOrigin(0.5).setDepth(101).setScrollFactor(0).setAlpha(0);
+    this.endText.setStroke('#000000', 8);
+    this.endText.setShadow(4, 4, 'rgba(0, 0, 0, 0.8)', 0, true, false);
 
     // E. Controls
     if (this.input.keyboard) {
@@ -187,6 +210,18 @@ export class JourneyScene extends Phaser.Scene {
         this.nearLandmarkId = null;
         this.activeLabel = '';
         this.updateTracking();
+      }
+    });
+
+    // Orientation lock status listener (for mobile portrait lock)
+    window.addEventListener('orientation-lock-changed', (e: Event) => {
+      const locked = (e as CustomEvent).detail.locked as boolean;
+      this.isOrientationLocked = locked;
+      if (locked) {
+        this.currentSpeed = 0;
+        this.targetSpeed = 0;
+        this.isMovingForward = false;
+        this.isMovingBackward = false;
       }
     });
 
@@ -287,7 +322,7 @@ export class JourneyScene extends Phaser.Scene {
         this.journeyState = 'approach';
         this.bikeScreenX = VIEWPORT_WIDTH * 0.78;
         this.bikeContainer.x = this.bikeScreenX;
-        this.atGoaMouth = true;
+        this.reachGoaMouth();
       } else {
         this.worldDistance = parseFloat(warpDistance);
       }
@@ -319,7 +354,10 @@ export class JourneyScene extends Phaser.Scene {
     }
 
     // 1b. Goa flow. Once ended, world + bike are frozen.
-    if (this.journeyState === 'ended') return;
+    if (this.journeyState === 'ended') {
+      this.updateHearts(dt);
+      return;
+    }
     // playing -> approach: the world has scrolled all the way to the goa and
     // clamped at its center, so the goa now fills the screen. Freeze the world;
     // the player drives the bike sprite itself forward into the goa mouth.
@@ -337,7 +375,7 @@ export class JourneyScene extends Phaser.Scene {
     // 2. Read movement input (active while playing OR approaching the goa).
     let fwd = false;
     let back = false;
-    if (this.started && !this.isDialogueActive && (this.journeyState === 'playing' || this.journeyState === 'approach')) {
+    if (!this.isOrientationLocked && this.started && !this.isDialogueActive && (this.journeyState === 'playing' || this.journeyState === 'approach')) {
       fwd = this.isMovingForward;
       back = this.isMovingBackward;
       if (this.cursors) {
@@ -380,13 +418,24 @@ export class JourneyScene extends Phaser.Scene {
       }
     }
 
+    // Auto-move motor forward during ending transition (e.g. first 800ms)
+    if (this.journeyState === 'ending') {
+      if (this.endingElapsed < 800) {
+        this.currentSpeed = 150; // sets driving animation speed
+        this.bikeScreenX = Math.min(this.bikeScreenX + this.currentSpeed * dt, VIEWPORT_WIDTH + 100);
+        this.bikeContainer.x = this.bikeScreenX;
+      } else {
+        this.currentSpeed = 0;
+      }
+    }
+
     // 4. Advance continuous world position, clamped so the strip always fills the
     // viewport (no black space). Bike sits at screenX = 640, so the world point
     // under the bike must stay within [640, trackWidth - 640].
-    // SKIP during approach: world is frozen, currentSpeed is updated dynamically
+    // SKIP during approach and ending: world is frozen, currentSpeed is updated dynamically
     // only to drive the 6-frame bike animation and screen movement. Advancing worldDistance here
     // would trigger the clamp and reset currentSpeed to 0 (killing the animation).
-    if (this.journeyState !== 'approach') {
+    if (this.journeyState !== 'approach' && this.journeyState !== 'ending') {
       this.worldDistance += this.currentSpeed * dt;
       const minWD = VIEWPORT_WIDTH * BIKE_CONFIG.screenXRatio;
       const maxWD = this.trackWidth - (VIEWPORT_WIDTH - VIEWPORT_WIDTH * BIKE_CONFIG.screenXRatio);
@@ -417,7 +466,10 @@ export class JourneyScene extends Phaser.Scene {
     this.updateBikeAnimation(delta);
 
     // 6b. Drive the ending fade + state transition once ending has begun.
-    if (this.journeyState === 'ending') this.tickEnding(delta);
+    if (this.journeyState === 'ending') {
+      this.tickEnding(delta);
+      this.updateHearts(dt);
+    }
 
     // 7. HUD label + landmark proximity
     this.updateTracking();
@@ -427,7 +479,7 @@ export class JourneyScene extends Phaser.Scene {
     const isEnter = Phaser.Input.Keyboard.JustDown(this.keyEnter);
     const isSpace = this.keySpace && Phaser.Input.Keyboard.JustDown(this.keySpace);
 
-    if (this.cursors && (isE || isEnter || isSpace)) {
+    if (this.cursors && (isE || isEnter || isSpace) && !this.isOrientationLocked) {
       this.triggerInteraction();
     }
   }
@@ -506,6 +558,11 @@ export class JourneyScene extends Phaser.Scene {
       }
     }
 
+    if (this.atGoaMouth) {
+      near = 'goa';
+      nearName = 'Goa';
+    }
+
     if (label !== this.activeLabel || near !== this.nearLandmarkId) {
       this.activeLabel = label;
       this.nearLandmarkId = near;
@@ -521,24 +578,21 @@ export class JourneyScene extends Phaser.Scene {
   }
 
   private triggerInteraction(): void {
+    if (this.isOrientationLocked) {
+      return;
+    }
+
+    if (this.journeyState === 'ending' || this.journeyState === 'ended') {
+      return;
+    }
+
     if (this.isDialogueActive) {
       this.dialogueBubble.hide();
       return;
     }
 
     if (this.atGoaMouth) {
-      const dialogue = landmarkDialogues['goa'];
-      if (dialogue) {
-        this.isDialogueActive = true;
-        this.currentSpeed = 0;
-        this.targetSpeed = 0;
-        window.dispatchEvent(new CustomEvent('journey-update', {
-          detail: { location: 'Goa', nearLandmark: false, activeLandmarkId: '', activeLandmarkName: '' },
-        }));
-        this.dialogueBubble.show(dialogue);
-      } else {
-        this.beginEnding();
-      }
+      this.beginEnding();
       return;
     }
 
@@ -577,11 +631,14 @@ export class JourneyScene extends Phaser.Scene {
 
   /** Enter the ending: lock input, hide prompt, fade audio, start auto-roll + fade. */
   private beginEnding(): void {
+    if (this.journeyState === 'ending' || this.journeyState === 'ended') return;
     this.journeyState = 'ending';
     this.endingElapsed = 0;
     this.isMovingForward = false;
     this.isMovingBackward = false;
     this.isDialogueActive = false;
+    this.atGoaMouth = false;
+    
     // Hide the interaction prompt during the ending.
     this.nearLandmarkId = null;
     window.dispatchEvent(new CustomEvent('journey-update', {
@@ -604,6 +661,93 @@ export class JourneyScene extends Phaser.Scene {
       this.journeyState = 'ended';
       this.currentSpeed = 0;
       this.targetSpeed = 0;
+    }
+  }
+
+  private spawnHeart(): void {
+    const xBase = Phaser.Math.Between(50, 1230);
+    const y = Phaser.Math.Between(730, 780);
+    const vy = Phaser.Math.Between(55, 95);
+    const scale = Phaser.Math.Between(2, 4);
+    const color = Phaser.Math.RND.pick([0xff3366, 0xff6688, 0xff88a3, 0xff4d4d, 0xffb3c6]);
+    const phaseSpeed = Phaser.Math.FloatBetween(0.8, 1.8);
+    const phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    
+    this.hearts.push({
+      x: xBase,
+      y,
+      vy,
+      color,
+      scale,
+      alpha: 0,
+      phase,
+      phaseSpeed,
+    });
+  }
+
+  private updateHearts(dt: number): void {
+    if (!this.heartsGraphics) return;
+
+    // Spawn hearts earlier during screen fade (>= 300ms) and in larger quantities
+    if (this.endingElapsed >= 300) {
+      if (this.hearts.length < 28 && Phaser.Math.Between(0, 100) < 20) {
+        this.spawnHeart();
+      }
+    }
+
+    this.heartsGraphics.clear();
+
+    for (let i = this.hearts.length - 1; i >= 0; i--) {
+      const h = this.hearts[i];
+      h.y -= h.vy * dt;
+      h.phase += h.phaseSpeed * dt;
+
+      // Sinusoidal horizontal drift
+      const currentX = h.x + Math.sin(h.phase) * 20;
+
+      // Fade in at bottom, fade out at top (y < 200)
+      if (h.y > 600) {
+        h.alpha = Phaser.Math.Clamp((720 - h.y) / 120, 0, 0.7);
+      } else if (h.y < 200) {
+        h.alpha = Phaser.Math.Clamp(h.y / 200, 0, 1) * 0.7;
+      } else {
+        h.alpha = 0.7;
+      }
+
+      if (h.alpha > 0) {
+        this.drawHeart(currentX, h.y, h.scale, h.color, h.alpha);
+      }
+
+      if (h.y < -30) {
+        this.hearts.splice(i, 1);
+      }
+    }
+  }
+
+  private drawHeart(x: number, y: number, scale: number, color: number, alpha: number): void {
+    const g = this.heartsGraphics!;
+    g.fillStyle(color, alpha);
+
+    // 7x6 pixel-art heart matrix
+    const matrix = [
+      [0, 1, 1, 0, 1, 1, 0],
+      [1, 1, 1, 1, 1, 1, 1],
+      [1, 1, 1, 1, 1, 1, 1],
+      [0, 1, 1, 1, 1, 1, 0],
+      [0, 0, 1, 1, 1, 0, 0],
+      [0, 0, 0, 1, 0, 0, 0]
+    ];
+
+    const pixelSize = scale;
+    const offsetX = x - (3.5 * pixelSize);
+    const offsetY = y - (3 * pixelSize);
+
+    for (let r = 0; r < matrix.length; r++) {
+      for (let c = 0; c < matrix[r].length; c++) {
+        if (matrix[r][c] === 1) {
+          g.fillRect(offsetX + c * pixelSize, offsetY + r * pixelSize, pixelSize, pixelSize);
+        }
+      }
     }
   }
 

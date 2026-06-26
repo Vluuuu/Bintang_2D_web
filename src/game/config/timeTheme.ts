@@ -32,6 +32,15 @@ export function getThemeForHour(hour: number): TimeTheme {
  * Gets the current TimeTheme based on device local time
  */
 export function getCurrentTheme(): TimeTheme {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const themeParam = urlParams.get('theme');
+    if (themeParam === 'day' || themeParam === 'sunset' || themeParam === 'night') {
+      return themeParam;
+    }
+  } catch (e) {
+    // Fallback if window is not defined
+  }
   const hour = new Date().getHours();
   return getThemeForHour(hour);
 }
