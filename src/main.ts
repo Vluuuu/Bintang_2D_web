@@ -62,9 +62,6 @@ window.addEventListener('hud-mute-changed', (e: Event) => {
   bgm.setMuted(muted);
 });
 
-// Ending (goa): fade the music out gently as the screen fades to black.
-window.addEventListener('journey-ending', () => bgm.fadeOut(), { once: true });
-
 // Follow device-time theme changes (reuses timeTheme rules; crossfades on change).
 window.setInterval(() => bgm.syncTheme(), 5000);
 

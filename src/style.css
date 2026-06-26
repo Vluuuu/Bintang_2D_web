@@ -151,7 +151,7 @@ body.pre-start #game-hud-container {
   box-shadow: 2px 2px 0 #000;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px), (pointer: coarse), (max-height: 600px) {
   .start-title { font-size: 15px; }
   .start-subtitle { font-size: 8px; }
   .start-btn { font-size: 11px; padding: 14px 18px; }
@@ -341,20 +341,55 @@ body.pre-start #game-hud-container {
   transform: scale(0.9) translateY(-10px);
 }
 
-/* Responsive adjustment for Mobile screens */
-@media (max-width: 768px) {
+/* Responsive adjustment for Mobile/Tablet or screens with coarse pointer or small height */
+@media (max-width: 1024px), (pointer: coarse), (max-height: 600px) {
+  #game-hud-container {
+    padding: 16px;
+  }
+  .hud-top-right {
+    gap: 6px;
+  }
   .hud-location-card, .hud-time-card {
-    font-size: 9px;
-    padding: 6px 12px;
+    font-size: 7px;
+    padding: 4px 8px;
+    border-width: 3px;
+    box-shadow: 2px 2px 0px #000;
+  }
+  .location-icon {
+    font-size: 10px;
+  }
+  .hud-sound-btn {
+    padding: 4px;
+    border-width: 3px;
+    box-shadow: 2px 2px 0px #000;
+  }
+  .svg-pixel-icon {
+    width: 14px;
+    height: 14px;
+  }
+  .control-group {
+    gap: 4px;
   }
   .control-btn {
-    width: 70px;
-    height: 70px;
-    font-size: 22px;
-    border-width: 4px;
+    width: 52px;
+    height: 52px;
+    font-size: 16px;
+    border-width: 3px;
+    box-shadow: 3px 3px 0px #000000;
+  }
+  .control-btn:active, .control-btn.active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px #000000;
+  }
+  .control-hint {
+    font-size: 6px;
   }
   .hud-interact-prompt .prompt-text {
-    font-size: 8px;
+    font-size: 7px;
+  }
+  .hud-interact-prompt .key-box {
+    font-size: 7px;
+    padding: 2px 5px;
   }
 }
 
@@ -480,9 +515,9 @@ body.pre-start #game-hud-container {
 }
 
 /* Mobile responsive for dialogue bubble */
-@media (max-width: 768px) {
+@media (max-width: 1024px), (pointer: coarse), (max-height: 600px) {
   #dialogue-bubble-container {
-    padding-top: 12%;
+    padding-top: 10%;
   }
 
   .dialogue-bubble {
@@ -499,13 +534,13 @@ body.pre-start #game-hud-container {
   }
 
   .dialogue-bubble-text {
-    font-size: 12px;
-    line-height: 1.5;
+    font-size: 11px;
+    line-height: 1.4;
   }
 
   .dialogue-bubble-hint {
-    font-size: 7px;
-    margin-top: 8px;
+    font-size: 6px;
+    margin-top: 6px;
   }
 }
 

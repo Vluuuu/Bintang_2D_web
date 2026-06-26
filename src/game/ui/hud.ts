@@ -5,6 +5,7 @@ export class GameHUD {
   private locationEl!: HTMLElement;
   private timeEl!: HTMLElement;
   private soundBtn!: HTMLElement;
+  private fullscreenBtn!: HTMLElement;
   private leftBtn!: HTMLElement;
   private rightBtn!: HTMLElement;
   private interactPromptEl!: HTMLElement;
@@ -42,6 +43,9 @@ export class GameHUD {
           <button class="hud-sound-btn" id="hud-sound-toggle" title="Toggle Sound">
             ${this.getSoundIconHTML()}
           </button>
+          <button class="hud-sound-btn" id="hud-fullscreen-toggle" title="Toggle Fullscreen">
+            ${this.getFullscreenIconHTML()}
+          </button>
         </div>
       </div>
 
@@ -73,6 +77,7 @@ export class GameHUD {
     this.locationEl = document.getElementById('hud-location-text')!;
     this.timeEl = document.getElementById('hud-time-text')!;
     this.soundBtn = document.getElementById('hud-sound-toggle')!;
+    this.fullscreenBtn = document.getElementById('hud-fullscreen-toggle')!;
     this.leftBtn = document.getElementById('ctrl-left')!;
     this.rightBtn = document.getElementById('ctrl-right')!;
     this.interactPromptEl = document.getElementById('hud-interact-prompt')!;
@@ -100,6 +105,15 @@ export class GameHUD {
     // 2. Sound Toggle Click
     this.soundBtn.addEventListener('click', () => {
       this.toggleMute();
+    });
+
+    // Fullscreen Toggle Click
+    this.fullscreenBtn.addEventListener('click', () => {
+      this.toggleFullscreen();
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      this.fullscreenBtn.innerHTML = this.getFullscreenIconHTML();
     });
 
     // 3. Prompt Interaction Trigger (on click / touch)
@@ -180,6 +194,63 @@ export class GameHUD {
           <path d="M4 9h4l5-5v16l-5-5H4V9zm12 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
         </svg>
       `;
+    }
+  }
+
+  private getFullscreenIconHTML(): string {
+    if (document.fullscreenElement) {
+      // Exit Fullscreen Icon (pixel brackets pointing in)
+      return `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="svg-pixel-icon" fill="currentColor">
+          <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+        </svg>
+      `;
+    } else {
+      // Enter Fullscreen Icon (pixel brackets pointing out)
+      return `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="svg-pixel-icon" fill="currentColor">
+          <path d="M5 5h5V3H3v7h2V5zm0 14H3v7h7v-2H5v-5zm14 5h-5v2h7v-7h-2v5zm0-19v5h2V3h-7v2h5z"/>
+        </svg>
+      `;
+    }
+  }
+
+  private toggleFullscreen(): void {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch((err) => {
+        console.warn("Exit fullscreen failed:", err);
+      });
+    } else {
+      const docEl = document.documentElement;
+      const requestFS = docEl.requestFullscreen || 
+                        (docEl as any).webkitRequestFullscreen || 
+                        (docEl as any).mozRequestFullScreen || 
+                        (docEl as any).msRequestFullscreen;
+      if (requestFS) {
+        requestFS.call(docEl).then(() => {
+          this.lockOrientation();
+        }).catch((err) => {
+          console.warn("Fullscreen request failed:", err);
+          this.lockOrientation();
+        });
+      } else {
+        this.lockOrientation();
+      }
+    }
+  }
+
+  private lockOrientation(): void {
+    try {
+      const orientation = screen.orientation as any;
+      if (orientation && typeof orientation.lock === 'function') {
+        orientation.lock('landscape').catch((err: any) => {
+          console.warn("Orientation lock failed:", err);
+        });
+      } else if ((screen as any).lockOrientation) {
+        (screen as any).lockOrientation('landscape');
+      }
+    } catch (e) {
+      console.warn("Orientation lock error:", e);
     }
   }
 
